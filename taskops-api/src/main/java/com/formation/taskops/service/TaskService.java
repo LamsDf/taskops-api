@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.EnumMap;
+import java.util.Map;
 
 /**
  * Couche metier. Elle isole les regles de gestion du controleur (HTTP)
@@ -14,6 +16,11 @@ import java.util.List;
  * Interet DevOps : cette couche est testable SANS demarrer de serveur
  * ni de base -> les tests sont rapides, donc la CI est rapide (Module 3).
  */
+/**
+* Compte les taches par statut.
+* Renvoie une Map ordonnee : TODO, IN_PROGRESS, DONE.
+*/
+
 @Service
 public class TaskService {
 
@@ -60,11 +67,22 @@ public class TaskService {
         return repository.save(existing);
     }
 
-    @Transactional
+       @Transactional
     public void delete(Long id) {
         if (!repository.existsById(id)) {
             throw new TaskNotFoundException(id);
         }
         repository.deleteById(id);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<TaskStatus, Long> countByStatus() {
+        Map<TaskStatus, Long> resultat = new EnumMap<>(TaskStatus.class);
+
+        for (TaskStatus statut : TaskStatus.values()) {
+            resultat.put(statut, (long) repository.findByStatus(statut).size());
+        }
+
+        return resultat;
     }
 }
