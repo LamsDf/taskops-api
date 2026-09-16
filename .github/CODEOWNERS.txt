@@ -1,0 +1,9 @@
+# Par defaut, toute l'equipe
+* @LamsDf
+
+# Le code metier exige une relecture backend
+/taskops-api/src/main/java/ @LamsDf @pseudo-du-binome
+
+# Infrastructure et CI
+/.github/workflows/ @LamsDf
+/taskops-api/pom.xml @LamsDf
