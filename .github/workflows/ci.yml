@@ -2,21 +2,45 @@ name: CI
 
 on:
   push:
-    branches: [main, ci/mettre-en-place-le-pipeline]
+    branches:
+      - main
   pull_request:
-    branches: [main]
+    branches:
+      - main
 
 permissions:
   contents: read
-
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   build-and-test:
     name: Build & tests
     runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Installer Java 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: temurin
+          cache: maven
+
+      - name: Construire et tester
+        working-directory: taskops-api
+        run: ./mvnw -B verify
+
+      - name: Publier les rapports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapports-tests
+          path: |
+            taskops-api/target/surefire-reports/
+            taskops-api/target/site/jacoco/
+          retention-days: 7
+
   quality:
     name: Analyse SonarQube
     needs: build-and-test
@@ -28,14 +52,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up JDK 25
+      - name: Installer Java 25
         uses: actions/setup-java@v5
         with:
-          java-version: 25
+          java-version: '25'
           distribution: temurin
           cache: maven
 
-      - name: Analyse avec SonarQube Cloud
+      - name: Cache SonarQube
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Analyser avec SonarQube Cloud
         working-directory: taskops-api
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -44,27 +75,3 @@ jobs:
           ./mvnw -B verify
           org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
           -Dsonar.qualitygate.wait=true
-    steps:
-      - name: Recuperer le code
-        uses: actions/checkout@v4
-
-      - name: Installer Java 25 (Temurin)
-        uses: actions/setup-java@v5
-        with:
-          java-version: '25'
-          distribution: 'temurin'
-          cache: 'maven'
-
-      - name: Construire et tester
-        working-directory: taskops-api
-        run: ./mvnw -B verify
-
-      - name: Publier les rapports de tests
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: rapports-tests
-          path: |
-            taskops-api/target/surefire-reports/
-            taskops-api/target/site/jacoco/
-          retention-days: 7
