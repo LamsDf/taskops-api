@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, ci/mettre-en-place-le-pipeline]
   pull_request:
     branches: [main]
 
