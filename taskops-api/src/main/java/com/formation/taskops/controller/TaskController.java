@@ -1,5 +1,6 @@
 package com.formation.taskops.controller;
 
+import com.formation.taskops.dto.TaskRequest;
 import com.formation.taskops.model.Task;
 import com.formation.taskops.model.TaskStatus;
 import com.formation.taskops.service.TaskService;
@@ -22,11 +23,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Couche d'exposition HTTP. Elle ne contient AUCUNE regle metier :
- * elle traduit du HTTP en appels de service, et des objets Java en JSON.
+ * Couche d'exposition HTTP.
+ * Elle traduit du HTTP en appels de service.
  */
-@RestController                        // @Controller + @ResponseBody : renvoie du JSON
-@RequestMapping("/api/tasks")          // prefixe commun a toutes les routes de la classe
+@RestController
+@RequestMapping("/api/tasks")
 public class TaskController {
 
     private final TaskService service;
@@ -35,45 +36,82 @@ public class TaskController {
         this.service = service;
     }
 
-    /** GET /api/tasks           -> toutes les taches
-     *  GET /api/tasks?status=TODO -> filtrees par statut */
+    /**
+     * GET /api/tasks
+     * GET /api/tasks?status=TODO
+     */
     @GetMapping
-    public List<Task> list(@RequestParam(required = false) TaskStatus status) {
-        return (status == null) ? service.findAll() : service.findByStatus(status);
+    public List<Task> list(
+            @RequestParam(required = false) TaskStatus status) {
+
+        return (status == null)
+                ? service.findAll()
+                : service.findByStatus(status);
     }
 
-    /** GET /api/tasks/{id} -> 200 + la tache, ou 404 si absente */
+    /**
+     * GET /api/tasks/{id}
+     */
     @GetMapping("/{id}")
     public Task getOne(@PathVariable Long id) {
         return service.findById(id);
     }
 
-    /** POST /api/tasks -> 201 Created + en-tete Location pointant la ressource creee.
-     *  @Valid declenche la validation des annotations portees par Task. */
+    /**
+     * POST /api/tasks
+     */
     @PostMapping
-    public ResponseEntity<Task> create(@Valid @RequestBody Task task) {
+    public ResponseEntity<Task> create(
+            @Valid @RequestBody TaskRequest request) {
+
+        Task task = new Task(
+                request.title(),
+                request.description()
+        );
+
+        if (request.status() != null) {
+            task.setStatus(request.status());
+        }
+
         Task created = service.create(task);
+
         return ResponseEntity
                 .created(URI.create("/api/tasks/" + created.getId()))
                 .body(created);
     }
 
-    /** PUT /api/tasks/{id} -> 200 + la tache mise a jour */
+    /**
+     * PUT /api/tasks/{id}
+     */
     @PutMapping("/{id}")
-    public Task update(@PathVariable Long id, @Valid @RequestBody Task task) {
+    public Task update(
+            @PathVariable Long id,
+            @Valid @RequestBody TaskRequest request) {
+
+        Task task = new Task(
+                request.title(),
+                request.description()
+        );
+
+        task.setStatus(request.status());
+
         return service.update(id, task);
     }
 
-    /** DELETE /api/tasks/{id} -> 204 No Content (succes, pas de corps de reponse) */
+    /**
+     * DELETE /api/tasks/{id}
+     */
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
         service.delete(id);
     }
-/** GET /api/tasks/stats -> repartition des taches par statut */
-@GetMapping("/stats")
-public Map<TaskStatus, Long> stats() {
-return service.countByStatus();
-}
-}
 
+    /**
+     * GET /api/tasks/stats
+     */
+    @GetMapping("/stats")
+    public Map<TaskStatus, Long> stats() {
+        return service.countByStatus();
+    }
+}
