@@ -30,8 +30,8 @@ jobs:
           cache: 'maven'
 
       - name: Construire et tester
-        run: ./mvnw -B verify
         working-directory: taskops-api
+        run: ./mvnw -B verify
 
       - name: Publier les rapports de tests
         if: always()
@@ -39,6 +39,6 @@ jobs:
         with:
           name: rapports-tests
           path: |
-          taskops-api/target/surefire-reports/
-          taskops-api/target/site/jacoco/
+            taskops-api/target/surefire-reports/
+            taskops-api/target/site/jacoco/
           retention-days: 7
