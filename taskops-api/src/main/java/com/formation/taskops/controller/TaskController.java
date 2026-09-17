@@ -7,25 +7,12 @@ import com.formation.taskops.service.TaskService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Couche d'exposition HTTP.
- * Elle traduit du HTTP en appels de service.
- */
 @RestController
 @RequestMapping("/api/tasks")
 public class TaskController {
@@ -36,41 +23,26 @@ public class TaskController {
         this.service = service;
     }
 
-    /**
-     * GET /api/tasks
-     * GET /api/tasks?status=TODO
-     */
     @GetMapping
-    public List<Task> list(
-            @RequestParam(required = false) TaskStatus status) {
-
+    public List<Task> list(@RequestParam(required = false) TaskStatus status) {
         return (status == null)
                 ? service.findAll()
                 : service.findByStatus(status);
     }
 
-    /**
-     * GET /api/tasks/{id}
-     */
     @GetMapping("/{id}")
     public Task getOne(@PathVariable Long id) {
         return service.findById(id);
     }
 
-    /**
-     * POST /api/tasks
-     */
     @PostMapping
-    public ResponseEntity<Task> create(
-            @Valid @RequestBody TaskRequest request) {
+    public ResponseEntity<Task> create(@Valid @RequestBody TaskRequest request) {
+        Task task = new Task();
+        task.setTitle(request.getTitle());
+        task.setDescription(request.getDescription());
 
-        Task task = new Task(
-                request.title(),
-                request.description()
-        );
-
-        if (request.status() != null) {
-            task.setStatus(request.status());
+        if (request.getStatus() != null) {
+            task.setStatus(request.getStatus());
         }
 
         Task created = service.create(task);
@@ -80,36 +52,25 @@ public class TaskController {
                 .body(created);
     }
 
-    /**
-     * PUT /api/tasks/{id}
-     */
     @PutMapping("/{id}")
     public Task update(
             @PathVariable Long id,
             @Valid @RequestBody TaskRequest request) {
 
-        Task task = new Task(
-                request.title(),
-                request.description()
-        );
-
-        task.setStatus(request.status());
+        Task task = new Task();
+        task.setTitle(request.getTitle());
+        task.setDescription(request.getDescription());
+        task.setStatus(request.getStatus());
 
         return service.update(id, task);
     }
 
-    /**
-     * DELETE /api/tasks/{id}
-     */
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
         service.delete(id);
     }
 
-    /**
-     * GET /api/tasks/stats
-     */
     @GetMapping("/stats")
     public Map<TaskStatus, Long> stats() {
         return service.countByStatus();
